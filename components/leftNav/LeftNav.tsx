@@ -1,46 +1,55 @@
 "use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  HomeIcon, 
-  DocumentPlusIcon, 
-  DocumentTextIcon, 
-  UserCircleIcon, 
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase/firebase"; // Import Firebase Auth
+import {
+  HomeIcon,
+  DocumentPlusIcon,
+  DocumentTextIcon,
+  UserCircleIcon,
   ArrowLeftOnRectangleIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon
-} from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion';
+} from "@heroicons/react/24/outline";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LeftNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  
+
   const isActive = (path: string) => pathname.startsWith(path);
-  const navWidth = isOpen ? 'w-64' : 'w-20';
+  const navWidth = isOpen ? "w-64" : "w-20";
 
   const links = [
     { href: "/dashboard", icon: <HomeIcon />, label: "Accueil" },
     { href: "/dashboard/profil", icon: <UserCircleIcon />, label: "Profil" },
     { href: "/dashboard/enregistrement", icon: <DocumentPlusIcon />, label: "Enregistrement" },
-    { href: "/dashboard/bons", icon: <DocumentTextIcon />, label: "Bons" }
+    { href: "/dashboard/liste", icon: <DocumentTextIcon />, label: "Bons" }
   ];
 
+  // Fonction pour gérer la déconnexion
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/"); // Rediriger vers la page de connexion après déconnexion
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion :", error);
+    }
+  };
+
   return (
-    <nav 
+    <nav
       className={`${navWidth} min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-4 fixed left-0 top-0 mt-20 transition-all duration-300 shadow-2xl group/nav`}
       onMouseLeave={() => setHoveredLink(null)}
     >
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <motion.div 
-          className="mb-8 px-2 flex items-center gap-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div className="mb-8 px-2 flex items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {isOpen ? (
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
               KCC
@@ -81,18 +90,14 @@ export default function LeftNav() {
         </div>
 
         {/* Bouton de déconnexion */}
-        <motion.div 
-          className="border-t border-gray-700/50 pt-4"
-          layout
-        >
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/20 rounded-lg transition-all group">
+        <motion.div className="border-t border-gray-700/50 pt-4" layout>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/20 rounded-lg transition-all group"
+          >
             <ArrowLeftOnRectangleIcon className="h-6 w-6" />
             {isOpen && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm"
-              >
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm">
                 Déconnexion
               </motion.span>
             )}
@@ -139,31 +144,17 @@ function NavLink({ href, icon, label, isActive, isOpen, onHover, isHovered }: Na
       onMouseLeave={() => onHover(null)}
       aria-current={isActive ? "page" : undefined}
     >
-      <motion.span 
-        className="h-6 w-6 shrink-0"
-        whileHover={{ scale: 1.1 }}
-      >
+      <motion.span className="h-6 w-6 shrink-0" whileHover={{ scale: 1.1 }}>
         {icon}
       </motion.span>
 
       {isOpen && (
-        <motion.span
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="opacity-100 group-hover/nav:opacity-100 transition-opacity"
-        >
+        <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="opacity-100">
           {label}
         </motion.span>
       )}
 
-      {/* Effet de survol */}
-      {isHovered && (
-        <motion.div
-          className="absolute inset-0 bg-white/5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        />
-      )}
+      {isHovered && <motion.div className="absolute inset-0 bg-white/5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} />}
     </Link>
   );
 }

@@ -4,21 +4,56 @@ import React, { useState } from 'react';
 import { QrCode, Clock, Package, CalendarDays, ShieldCheck, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase/firebase';
+
+interface Agent {
+  id: string;
+  nom: string;
+  matricule: string;
+  gsp: string;
+  mois: string;
+  pointDistribution: string;
+  photoUrl?: string;
+}
 
 export default function VerificationPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [error, setError] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulation de vérification API
-    setTimeout(() => {
-      setIsVerified(true);
+    setError('');
+
+    try {
+      // Interroger Firestore pour récupérer l'agent dont le matricule correspond au code saisi
+      const q = query(
+        collection(db, "enregistrements"),
+        where("matricule", "==", code)
+      );
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
+        setError("Aucun agent trouvé avec ce matricule.");
+      } else {
+        // On suppose qu'un matricule correspond à un seul agent
+        const docData = querySnapshot.docs[0].data() as Omit<Agent, "id">;
+        const agentFound: Agent = {
+          id: querySnapshot.docs[0].id,
+          ...docData,
+        };
+        setAgent(agentFound);
+        setIsVerified(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Erreur lors de la vérification.");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -43,7 +78,7 @@ export default function VerificationPage() {
             <p className="text-gray-500">
               {isVerified 
                 ? 'Bon validé avec succès ✅' 
-                : 'Authentifiez votre bon de réapprovisionnement'}
+                : 'Authentifiez votre bon de réapprovisionnement via votre matricule'}
             </p>
           </div>
 
@@ -51,18 +86,16 @@ export default function VerificationPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-                  Code de vérification
+                  Matricule
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
+                    type="text"
                     id="code"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     className="w-full px-5 py-3.5 rounded-xl border-2 border-gray-200 focus:border-[#01B4AC] focus:ring-2 focus:ring-[#01B4AC]/20 transition-all outline-none"
-                    placeholder="XXXXXX"
-                    inputMode="numeric"
-                    maxLength={6}
+                    placeholder="Ex: K26579"
                     required
                   />
                   <div className="absolute right-3 top-3.5 flex items-center gap-1 text-sm text-[#01B4AC]">
@@ -70,6 +103,7 @@ export default function VerificationPage() {
                     <span>15:00</span>
                   </div>
                 </div>
+                {error && <p className="text-red-500 mt-2">{error}</p>}
               </div>
 
               <motion.button
@@ -79,7 +113,7 @@ export default function VerificationPage() {
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-[#01B4AC] to-[#018D86] hover:from-[#01B4AC]/90 hover:to-[#018D86]/90 text-white py-4 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
-                {isLoading ? 'Vérification en cours...' : 'Confirmer le code'}
+                {isLoading ? 'Vérification en cours...' : 'Confirmer le matricule'}
               </motion.button>
             </form>
           ) : (
@@ -108,62 +142,92 @@ export default function VerificationPage() {
         </motion.div>
 
         <AnimatePresence>
-          {isVerified && (
+          {isVerified && agent && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className="mt-8 bg-gradient-to-br from-[#01B4AC] to-[#018D86] p-8 rounded-2xl shadow-xl text-white"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <span className="bg-white/10 px-3 py-1 rounded-full text-sm">REF #12345</span>
-                  <span>Bon de Réapprovisionnement</span>
-                </h2>
-                <Image
-                  src="/qr-code.svg"
-                  alt="QR Code"
-                  width={80}
-                  height={80}
-                  className="rounded-lg border-2 border-white/20"
-                />
+      <div className="bg-white text-gray-900 p-4 rounded-lg shadow-lg h-[400px] w-[600px] border uppercase border-gray-400">
+        {/* En-tête */}
+        <div className="flex justify-between items-center p-2 border border-gray-500">
+          <div className="text-base text-gray-600 font-semibold">
+            <img
+              src="/KCCLogo.svg"
+              alt="Logo KCC"
+              className="h-10 w-32 transition-transform hover:scale-105"
+              width={128}
+              height={40}
+            />
+          </div>
+          <div className="text-center">
+            <h2 className="text-red-700 font-bold text-base uppercase">BON DE FARINE</h2>
+            <p className="text-base font-semibold">25 KG</p>
+          </div>
+          {/* Affichage de la photo depuis Cloudinary */}
+          <div className="text-center">
+            {agent.photoUrl ? (
+              <img
+                src={agent.photoUrl}
+                alt="Photo de l'agent"
+                className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
+              />
+            ) : (
+              <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full">
+                Pas de photo
               </div>
+            )}
+          </div>
+        </div>
 
-              <div className="space-y-6">
-                <div className="p-4 bg-white/10 rounded-xl">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-medium">T-shirt Premium</h3>
-                      <p className="text-sm opacity-80">Référence: TSH-PREM-2024</p>
-                    </div>
-                    <span className="bg-white/10 px-3 py-1 rounded-full text-sm">En cours</span>
-                  </div>
-                </div>
+        {/* Contenu du bon */}
+        <div className="border border-gray-500">
+          <div className="grid grid-cols-2 border-b border-gray-500">
+            <p className="border-r border-gray-500 p-1 font-bold text-base">Noms</p>
+            <p className="p-1 text-base font-semibold">{agent.nom}</p>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1 p-3 bg-white/10 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm opacity-80">
-                      <Package className="w-4 h-4" />
-                      <span>Quantité</span>
-                    </div>
-                    <p className="font-medium text-lg">500 unités</p>
-                  </div>
-                  <div className="space-y-1 p-3 bg-white/10 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm opacity-80">
-                      <CalendarDays className="w-4 h-4" />
-                      <span>Livraison</span>
-                    </div>
-                    <p className="font-medium text-lg">25/03/2024</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-white/20">
-                  <div className="flex items-center justify-between">
-                    <span className="opacity-80">Fournisseur</span>
-                    <span className="font-medium">Textiles Premium</span>
-                  </div>
-                </div>
+          <div className="grid grid-cols-2 border-b border-gray-500">
+            <div>
+              <div className="grid grid-cols-2 border-b border-gray-500">
+                <p className="border-r border-gray-500 p-1 font-bold text-base">Matricule</p>
+                <p className="p-1 text-base font-semibold">{agent.matricule}</p>
               </div>
+              <div className="grid grid-cols-2 border-b border-gray-500">
+                <p className="border-r border-gray-500 p-1 font-bold text-base">GSP</p>
+                <p className="p-1 text-base font-semibold">{agent.gsp}</p>
+              </div>
+              <div className="grid grid-cols-2 border-b border-gray-500">
+                <p className="border-r border-gray-500 p-1 font-bold text-base">Mois</p>
+                <p className="p-1 text-base font-semibold">{agent.mois}</p>
+              </div>
+            </div>
+            <div className="border border-gray-500 text-xl text-center">
+              <p className="border-r border-gray-500 p-1 font-bold">N°</p>
+              <p className="p-1 font-bold">237</p>
+            </div>
+          </div>
+
+          <div className="border-b border-gray-500">
+            <p className="p-1 font-bold text-base">
+              Point de distribution : <span className="font-semibold">{agent.pointDistribution}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Pied de page */}
+        <div className="flex justify-center items-center p-6 border-x border-b border-gray-500 text-gray-700">
+          <img
+            src="/KCCLogo.svg"
+            alt="Logo KCC"
+            className="h-10 w-32 transition-transform hover:scale-105"
+            width={128}
+            height={40}
+          />
+        </div>
+        </div>
+    
             </motion.div>
           )}
         </AnimatePresence>
@@ -171,8 +235,8 @@ export default function VerificationPage() {
 
       <p className="mt-8 text-sm text-gray-500 text-center max-w-md">
         <Clock className="inline-block w-4 h-4 mr-1" />
-        Ce code est valable pendant 15 minutes. En cas de problème, contactez le support.
+        Ce matricule est valable pendant 15 minutes. En cas de problème, contactez le support.
       </p>
     </div>
-  )
+  );
 }

@@ -3,6 +3,8 @@
 import { CheckCircleIcon, CloudArrowDownIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "@/firebase/firebase"; // Ajustez le chemin selon votre projet
 
 interface FormData {
   nom: string;
@@ -94,8 +96,18 @@ export default function EnregistrementPage() {
       if (formData.photo) {
         photoUrl = await uploadImage(formData.photo);
       }
-      // Simulation d'appel API ou sauvegarde des données avec l'URL de la photo
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Enregistrement des données dans Firestore
+      await addDoc(collection(db, "enregistrements"), {
+        nom: formData.nom,
+        matricule: formData.matricule,
+        gsp: formData.gsp,
+        mois: formData.mois,
+        pointDistribution: formData.pointDistribution,
+        photoUrl,
+        createdAt: new Date(),
+      });
+
       console.log("Données soumises:", { ...formData, photo: photoUrl });
       alert("Enregistrement réussi !");
       setFormData({

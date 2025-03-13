@@ -37,7 +37,7 @@ export default function Hero() {
             Vérifiez rapidement et efficacement la validité des bons de travailleur pour accéder aux fournitures essentielles.
           </p>
           <button 
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/pages/verification")}
             className="bg-[#01B4AC] text-white px-8 py-4 rounded-xl font-semibold hover:bg-[#018D86] transition-all shadow-md animate-fade-in-up delay-200"
           >
             🚀 Démarrer la vérification
