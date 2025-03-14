@@ -20,11 +20,11 @@ export default function Hero() {
         {/* Illustration principale */}
         <div className="md:w-1/2 flex justify-center mb-10 md:mb-0">
           <Image 
-            src="/hero-image.png" 
+            src="/unnamed.gif" 
             alt="Illustration de vérification" 
-            width={500} 
-            height={500} 
-            className="object-contain" 
+            width={700} 
+            height={400} 
+            className="object-cover" 
           />
         </div>
 
