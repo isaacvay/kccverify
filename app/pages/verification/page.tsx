@@ -270,26 +270,26 @@ function VerificationContent() {
                   </div>
                 </div>
 
-                {/* QR Code contenant le matricule */}
-                <div className="flex justify-center items-center mt-4">
-                  <div className="bg-white p-2 rounded shadow">
-                    <QRCode
-                      value={`https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`}
-                      size={120}
+                
+                  {/* Pied de page */}
+                  <div className="flex justify-between  items-center p-3 border-x border-b border-gray-500 text-gray-700">
+                    <img
+                      src="/KCCLogo.svg"
+                      alt="Logo KCC"
+                      className="h-10 w-32 transition-transform hover:scale-105"
+                      width={128}
+                      height={40}
                     />
+                    {/* QR Code */}
+                  <div className="flex justify-center items-center">
+                    <div className="bg-white p-2 rounded shadow">
+                      <QRCode 
+                      value={`https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`}
+                      size={50} />
+                    </div>
                   </div>
-                </div>
-
-                {/* Pied de page */}
-                <div className="flex justify-center items-center p-6 border-x border-b border-gray-500 text-gray-700">
-                  <img
-                    src="/KCCLogo.svg"
-                    alt="Logo KCC"
-                    className="h-10 w-32 transition-transform hover:scale-105"
-                    width={128}
-                    height={40}
-                  />
-                </div>
+                  </div>
+                
               </div>
             </motion.div>
           )}
