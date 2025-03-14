@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const BonPDF = ({ agent }: { agent: Agent }) => {
+const BonPDF = ({ agent, index }: { agent: Agent , index: number }) => {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const qrCodeValue = `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`;
 
@@ -153,7 +153,7 @@ const BonPDF = ({ agent }: { agent: Agent }) => {
           </View>
           <View style={styles.numberBox}>
             <Text style={{ fontSize: 10 }}>N°</Text>
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>237</Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{index + 1}</Text>
           </View>
         </View>
 
@@ -178,8 +178,8 @@ const BonPDF = ({ agent }: { agent: Agent }) => {
 const BonsPDFDocument = ({ agents }: { agents: Agent[] }) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      {agents.map((agent) => (
-        <BonPDF key={agent.id} agent={agent} />
+    {agents.map((agent, index) => (
+        <BonPDF key={agent.id} agent={agent} index={index} /> // Ajout de l'index
       ))}
     </Page>
   </Document>
@@ -231,7 +231,7 @@ export default function BonsListPage() {
           </PDFDownloadLink>
         </div>
         <div className="flex flex-col w-6/12 mx-auto gap-4">
-          {agents.map((agent) => {
+          {agents.map((agent , index) => {
             const qrCodeValue = `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`;
             return (
               <div
@@ -304,7 +304,7 @@ export default function BonsListPage() {
                     </div>
                     <div className="border border-gray-500 text-xl text-center">
                       <p className="border-r border-gray-500 p-1 font-bold">N°</p>
-                      <p className="p-1 font-bold">237</p>
+                      <p className="p-1 font-bold">{index + 1}</p>
                     </div>
                   </div>
                   <div className="border-b border-gray-500">
