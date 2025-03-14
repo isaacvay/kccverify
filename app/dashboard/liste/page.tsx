@@ -96,7 +96,7 @@ export default function AgentsListPage() {
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen ml-0 md:ml-56">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header avec statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-[#01B4AC]/20">
             <div className="flex items-center gap-3">
               <ChartBarIcon className="w-6 h-6 text-[#01B4AC]" />
@@ -106,20 +106,7 @@ export default function AgentsListPage() {
               </div>
             </div>
           </div>
-          {gspOptions.map(gsp => (
-            <div key={gsp} className="bg-white p-4 rounded-xl shadow-sm border border-[#01B4AC]/20">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-8 bg-[#01B4AC] rounded-full" />
-                <div>
-                  <div className="text-sm text-gray-500">{gsp}</div>
-                  <div className="text-2xl font-bold">{agentStats.byGSP[gsp]}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Bouton vers la page des bons */}
+          {/* Bouton vers la page des bons */}
         <div className="flex justify-end">
           <Link href="/dashboard/bons">
             <button className="px-4 py-2 bg-[#01B4AC] text-white rounded-lg shadow-md hover:bg-[#018D86] transition-all">
@@ -127,6 +114,9 @@ export default function AgentsListPage() {
             </button>
           </Link>
         </div>
+        </div>
+
+        
 
         {/* Contrôles de filtrage */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
