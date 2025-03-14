@@ -6,11 +6,9 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/firebase/firebase";
 import { 
   MagnifyingGlassIcon, 
-  UserCircleIcon, 
   ArrowPathIcon,
   ChevronUpDownIcon,
-  ChartBarIcon,
-  DocumentArrowDownIcon
+  ChartBarIcon
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -83,14 +81,13 @@ export default function AgentsListPage() {
   const agentStats: {
     total: number;
     byGSP: { [key: string]: number };
-} = {
+  } = {
     total: agents.length,
     byGSP: gspOptions.reduce((acc, gsp) => ({
       ...acc,
       [gsp]: agents.filter(agent => agent.gsp === gsp).length
-    }), {} as { [key: string]: number }) // <- Cast explicite ici
-};
-
+    }), {} as { [key: string]: number })
+  };
 
   const getInitials = (name: string) => 
     name.split(' ').map(part => part[0]).join('').toUpperCase();
@@ -120,6 +117,15 @@ export default function AgentsListPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Bouton vers la page des bons */}
+        <div className="flex justify-end">
+          <Link href="/dashboard/bons">
+            <button className="px-4 py-2 bg-[#01B4AC] text-white rounded-lg shadow-md hover:bg-[#018D86] transition-all">
+              Voir tous les bons
+            </button>
+          </Link>
         </div>
 
         {/* Contrôles de filtrage */}
