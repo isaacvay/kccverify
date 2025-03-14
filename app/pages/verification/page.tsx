@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { QrCode, Clock, ShieldCheck, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "@/firebase/firebase";
 import { useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
@@ -28,14 +28,15 @@ function VerificationContent() {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [error, setError] = useState("");
 
-  // Fonction de vérification du matricule
+  // Fonction de vérification du matricule avec limite à 1 résultat
   const verifyMatricule = async (matricule: string) => {
     setIsLoading(true);
     setError("");
     try {
       const q = query(
         collection(db, "enregistrements"),
-        where("matricule", "==", matricule)
+        where("matricule", "==", matricule),
+        limit(1) // Limite le résultat à 1 document
       );
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) {
@@ -270,26 +271,24 @@ function VerificationContent() {
                   </div>
                 </div>
 
-                
-                  {/* Pied de page */}
-                  <div className="flex justify-between  items-center p-3 border-x border-b border-gray-500 text-gray-700">
-                    <img
-                      src="/KCCLogo.svg"
-                      alt="Logo KCC"
-                      className="h-10 w-32 transition-transform hover:scale-105"
-                      width={128}
-                      height={40}
-                    />
-                    {/* QR Code */}
+                {/* Pied de page avec QR Code */}
+                <div className="flex justify-between items-center p-3 border-x border-b border-gray-500 text-gray-700">
+                  <img
+                    src="/KCCLogo.svg"
+                    alt="Logo KCC"
+                    className="h-10 w-32 transition-transform hover:scale-105"
+                    width={128}
+                    height={40}
+                  />
                   <div className="flex justify-center items-center">
                     <div className="bg-white p-2 rounded shadow">
-                      <QRCode 
-                      value={`https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`}
-                      size={50} />
+                      <QRCode
+                        value={`https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`}
+                        size={50}
+                      />
                     </div>
                   </div>
-                  </div>
-                
+                </div>
               </div>
             </motion.div>
           )}
