@@ -113,7 +113,7 @@ export default function AgentDetailPage() {
             </div>
             <div className="border border-gray-500 text-xl text-center">
               <p className="border-r border-gray-500 p-1 font-bold">N°</p>
-              <p className="p-1 font-bold">237</p>
+              <p className="p-1 font-bold">-</p>
             </div>
           </div>
 
