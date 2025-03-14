@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { QrCode, Clock, Package, CalendarDays, ShieldCheck, CheckCircle } from "lucide-react";
+import React, { useEffect, useState, Suspense } from "react";
+import { QrCode, Clock, ShieldCheck, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/firebase";
 import { useSearchParams } from "next/navigation";
@@ -19,7 +18,7 @@ interface Agent {
   photoUrl?: string;
 }
 
-export default function VerificationPage() {
+function VerificationContent() {
   const searchParams = useSearchParams();
   const matriculeParam = searchParams.get("matricule");
 
@@ -27,9 +26,9 @@ export default function VerificationPage() {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [agent, setAgent] = useState<Agent | null>(null);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
 
-  // Fonction qui vérifie un matricule donné
+  // Fonction de vérification du matricule
   const verifyMatricule = async (matricule: string) => {
     setIsLoading(true);
     setError("");
@@ -59,7 +58,7 @@ export default function VerificationPage() {
     }
   };
 
-  // Si un matricule est fourni dans l'URL, on lance la vérification automatique
+  // Vérification automatique si un matricule est fourni dans l'URL
   useEffect(() => {
     if (matriculeParam) {
       setCode(matriculeParam);
@@ -67,16 +66,21 @@ export default function VerificationPage() {
     }
   }, [matriculeParam]);
 
-  // Soumission manuelle (si aucun matricule n'est présent dans l'URL)
+  // Soumission manuelle si aucun matricule dans l'URL
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     verifyMatricule(code);
   };
 
+  // Valeur du QR code qui intègre le matricule
+  const qrCodeValue = agent
+    ? `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`
+    : "";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] flex flex-col items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-2xl">
-        <motion.div 
+        <motion.div
           className="bg-white p-8 rounded-2xl shadow-xl border border-[#01B4AC]/20"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -90,20 +94,23 @@ export default function VerificationPage() {
               )}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {isVerified ? 'Vérification Réussie !' : 'Validation de Bon'}
+              {isVerified ? "Vérification Réussie !" : "Validation de Bon"}
             </h1>
             <p className="text-gray-500">
-              {isVerified 
-                ? 'Bon validé avec succès ✅' 
-                : 'Authentifiez votre bon de réapprovisionnement via votre matricule'}
+              {isVerified
+                ? "Bon validé avec succès ✅"
+                : "Authentifiez votre bon de réapprovisionnement via votre matricule"}
             </p>
           </div>
 
-          {/* Affichage du formulaire seulement si aucun matricule n'est fourni en URL */}
+          {/* Affichage du formulaire seulement si aucun matricule n'est fourni dans l'URL */}
           {!isVerified && !matriculeParam && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="code"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Matricule
                 </label>
                 <div className="relative">
@@ -131,13 +138,15 @@ export default function VerificationPage() {
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-[#01B4AC] to-[#018D86] hover:from-[#01B4AC]/90 hover:to-[#018D86]/90 text-white py-4 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
-                {isLoading ? 'Vérification en cours...' : 'Confirmer le matricule'}
+                {isLoading ? "Vérification en cours..." : "Confirmer le matricule"}
               </motion.button>
             </form>
           )}
 
           {!isVerified && matriculeParam && isLoading && (
-            <div className="text-center text-gray-500">Vérification automatique en cours...</div>
+            <div className="text-center text-gray-500">
+              Vérification automatique en cours...
+            </div>
           )}
 
           {isVerified && (
@@ -150,7 +159,9 @@ export default function VerificationPage() {
                 <div className="bg-green-50 p-6 rounded-xl border border-green-100">
                   <div className="flex items-center gap-3 text-green-700">
                     <CheckCircle className="w-6 h-6" />
-                    <h3 className="font-semibold">Bon authentifié avec succès</h3>
+                    <h3 className="font-semibold">
+                      Bon authentifié avec succès
+                    </h3>
                   </div>
                 </div>
               </motion.div>
@@ -186,7 +197,9 @@ export default function VerificationPage() {
                     />
                   </div>
                   <div className="text-center">
-                    <h2 className="text-red-700 font-bold text-base uppercase">BON DE FARINE</h2>
+                    <h2 className="text-red-700 font-bold text-base uppercase">
+                      BON DE FARINE
+                    </h2>
                     <p className="text-base font-semibold">25 KG</p>
                   </div>
                   {/* Affichage de la photo depuis Cloudinary */}
@@ -208,23 +221,37 @@ export default function VerificationPage() {
                 {/* Contenu du bon */}
                 <div className="border border-gray-500">
                   <div className="grid grid-cols-2 border-b border-gray-500">
-                    <p className="border-r border-gray-500 p-1 font-bold text-base">Noms</p>
+                    <p className="border-r border-gray-500 p-1 font-bold text-base">
+                      Noms
+                    </p>
                     <p className="p-1 text-base font-semibold">{agent.nom}</p>
                   </div>
 
                   <div className="grid grid-cols-2 border-b border-gray-500">
                     <div>
                       <div className="grid grid-cols-2 border-b border-gray-500">
-                        <p className="border-r border-gray-500 p-1 font-bold text-base">Matricule</p>
-                        <p className="p-1 text-base font-semibold">{agent.matricule}</p>
+                        <p className="border-r border-gray-500 p-1 font-bold text-base">
+                          Matricule
+                        </p>
+                        <p className="p-1 text-base font-semibold">
+                          {agent.matricule}
+                        </p>
                       </div>
                       <div className="grid grid-cols-2 border-b border-gray-500">
-                        <p className="border-r border-gray-500 p-1 font-bold text-base">GSP</p>
-                        <p className="p-1 text-base font-semibold">{agent.gsp}</p>
+                        <p className="border-r border-gray-500 p-1 font-bold text-base">
+                          GSP
+                        </p>
+                        <p className="p-1 text-base font-semibold">
+                          {agent.gsp}
+                        </p>
                       </div>
                       <div className="grid grid-cols-2 border-b border-gray-500">
-                        <p className="border-r border-gray-500 p-1 font-bold text-base">Mois</p>
-                        <p className="p-1 text-base font-semibold">{agent.mois}</p>
+                        <p className="border-r border-gray-500 p-1 font-bold text-base">
+                          Mois
+                        </p>
+                        <p className="p-1 text-base font-semibold">
+                          {agent.mois}
+                        </p>
                       </div>
                     </div>
                     <div className="border border-gray-500 text-xl text-center">
@@ -236,7 +263,9 @@ export default function VerificationPage() {
                   <div className="border-b border-gray-500">
                     <p className="p-1 font-bold text-base">
                       Point de distribution :{" "}
-                      <span className="font-semibold">{agent.pointDistribution}</span>
+                      <span className="font-semibold">
+                        {agent.pointDistribution}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -272,5 +301,13 @@ export default function VerificationPage() {
         Ce matricule est valable pendant 15 minutes. En cas de problème, contactez le support.
       </p>
     </div>
+  );
+}
+
+export default function VerificationPageWrapper() {
+  return (
+    <Suspense fallback={<div>Chargement de la vérification...</div>}>
+      <VerificationContent />
+    </Suspense>
   );
 }
