@@ -11,25 +11,25 @@ export default function HowItWorksPage() {
       icon: <FaQrcode className="w-8 h-8" />,
       title: "Obtenir le Bon",
       description: "Recevez votre bon de réapprovisionnement avec un QR code unique généré sécuritairement",
-      image: "/step1.jpg"
+      image: "/bonv.png"
     },
     {
       icon: <FaMobileAlt className="w-8 h-8" />,
       title: "Scanner le Code",
       description: "Utilisez notre scanner intégré ou l'appareil photo de votre smartphone pour lire le QR code",
-      image: "/step2.jpg"
+      image: "/scan.jpg"
     },
     {
       icon: <FaCheckCircle className="w-8 h-8" />,
       title: "Validation Instantanée",
       description: "Notre système vérifie en temps réel l'authenticité et la validité du bon",
-      image: "/step3.jpg"
+      image: "/validation.png"
     },
     {
       icon: <FaShieldAlt className="w-8 h-8" />,
       title: "Réception Sécurisée",
       description: "Réceptionnez vos fournitures après confirmation du statut valide du bon",
-      image: "/step4.jpg"
+      image: "/secu.jpg"
     }
   ];
 
@@ -110,7 +110,7 @@ export default function HowItWorksPage() {
               viewport={{ once: true }}
             >
               <Image
-                src="/qr-tech.jpg"
+                src="/tech.jpeg"
                 alt="Technologie QR Code"
                 fill
                 className="object-cover"
