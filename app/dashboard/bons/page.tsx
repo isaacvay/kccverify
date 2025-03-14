@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/firebase";
+import { PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 import QRCode from "react-qr-code";
+import QRCode1 from "qrcode";
 
 interface Agent {
   id: string;
@@ -15,10 +17,178 @@ interface Agent {
   photoUrl?: string;
 }
 
+const styles = StyleSheet.create({
+  page: {
+    padding: 10,
+    fontSize: 12,
+    textTransform: "uppercase",
+    fontFamily: "Helvetica-Bold",
+  },
+  container: {
+    border: "1 solid #000",
+    marginBottom: 10,
+    padding: 0,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderBottom: "1 solid #000",
+    padding: 8,
+    alignItems: "center",
+  },
+  headerText: {
+    textAlign: "center",
+    marginHorizontal: 20,
+  },
+  content: {
+    marginTop: 0,
+  },
+  gridRow: {
+    flexDirection: "row",
+    borderBottom: "1 solid #000",
+  },
+  gridCol: {
+    padding: 4,
+    borderRight: "1 solid #000",
+    flex: 1,
+  },
+  gridColLast: {
+    padding: 4,
+    flex: 1,
+  },
+  label: {
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  value: {
+    fontWeight: "normal",
+  },
+  numberBox: {
+    flex: 0.5,
+    justifyContent: "center",
+    alignItems: "center",
+    borderLeft: "1 solid #000",
+    padding: 4,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 8,
+    borderTop: "1 solid #000",
+    alignItems: "center",
+  },
+  logo: {
+    width: 128,
+    height: 40,
+  },
+  agentPhoto: {
+    width: 96,
+    height: 96,
+    borderRadius: 8,
+    border: "2 solid #fff",
+  },
+  qrContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: "#fff",
+    padding: 4,
+    borderRadius: 4,
+    border: "1 solid #000",
+  },
+  qrImage: {
+    width: "100%",
+    height: "100%",
+  },
+});
+
+const BonPDF = ({ agent }: { agent: Agent }) => {
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const qrCodeValue = `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`;
+
+  useEffect(() => {
+    QRCode1.toDataURL(qrCodeValue, { width: 200, margin: 1 })
+      .then((url: React.SetStateAction<string>) => setQrDataUrl(url))
+      .catch(console.error);
+  }, [qrCodeValue]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Image style={styles.logo} src="/KCCLogo.png" />
+        <View style={styles.headerText}>
+          <Text style={{ color: "#d32f2f", fontSize: 14, marginBottom: 4 }}>BON DE FARINE</Text>
+          <Text style={{ fontSize: 12 }}>25 KG</Text>
+        </View>
+        {agent.photoUrl ? (
+          <Image style={styles.agentPhoto} src={agent.photoUrl} />
+        ) : (
+          <View style={[styles.agentPhoto, { backgroundColor: "#eee", justifyContent: "center", alignItems: "center" }]}>
+            <Text>{agent.nom.split(" ").map((n) => n[0]).join("")}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.gridRow}>
+          <View style={styles.gridCol}>
+            <Text style={styles.label}>Noms :</Text>
+            <Text style={styles.value}>{agent.nom}</Text>
+          </View>
+        </View>
+
+        <View style={styles.gridRow}>
+          <View style={{ flex: 1, flexDirection: "row" }}>
+            <View style={[styles.gridCol, { flex: 2 }]}>
+              <Text style={styles.label}>Matricule :</Text>
+              <Text style={styles.value}>{agent.matricule}</Text>
+            </View>
+            <View style={[styles.gridCol, { flex: 1 }]}>
+              <Text style={styles.label}>GSP :</Text>
+              <Text style={styles.value}>{agent.gsp}</Text>
+            </View>
+            <View style={[styles.gridColLast, { flex: 1 }]}>
+              <Text style={styles.label}>Mois :</Text>
+              <Text style={styles.value}>{agent.mois}</Text>
+            </View>
+          </View>
+          <View style={styles.numberBox}>
+            <Text style={{ fontSize: 10 }}>N°</Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>237</Text>
+          </View>
+        </View>
+
+        <View style={styles.gridRow}>
+          <View style={styles.gridColLast}>
+            <Text style={styles.label}>Point de distribution :</Text>
+            <Text style={styles.value}>{agent.pointDistribution}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <Image style={styles.logo} src="/KCCLogo.png" />
+        <View style={styles.qrContainer}>
+          {qrDataUrl && <Image style={styles.qrImage} src={qrDataUrl} />}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const BonsPDFDocument = ({ agents }: { agents: Agent[] }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      {agents.map((agent) => (
+        <BonPDF key={agent.id} agent={agent} />
+      ))}
+    </Page>
+  </Document>
+);
+
 export default function BonsListPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -39,14 +209,6 @@ export default function BonsListPage() {
     fetchAgents();
   }, []);
 
-  // Fonction pour récupérer les initiales si aucune photo n'est disponible
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase();
-
   if (loading) return <div>Chargement...</div>;
   if (error) return <div>{error}</div>;
   if (agents.length === 0) return <div>Aucun bon trouvé.</div>;
@@ -57,19 +219,29 @@ export default function BonsListPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-4 uppercase text-center">
           Liste des Bons
         </h1>
+        <div className="flex justify-end mb-4">
+          <PDFDownloadLink
+            document={<BonsPDFDocument agents={agents} />}
+            fileName="bons.pdf"
+            className="px-4 py-2 bg-[#01B4AC] text-white rounded-lg shadow-md hover:bg-[#018D86] transition-all"
+          >
+            {({ loading }) =>
+              loading ? "Génération du PDF..." : "Exporter en PDF"
+            }
+          </PDFDownloadLink>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {agents.map((agent) => {
-            // Construire l'URL du QR code intégrant le matricule
             const qrCodeValue = `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`;
             return (
               <div
                 key={agent.id}
                 className="bg-white text-gray-900 p-4 rounded-lg shadow-lg border border-gray-400 uppercase"
               >
-                {/* En-tête du bon */}
                 <div className="flex justify-between items-center p-2 border border-gray-500">
                   <div className="text-base text-gray-600 font-semibold">
                     <img
+                      crossOrigin="anonymous"
                       src="/KCCLogo.svg"
                       alt="Logo KCC"
                       className="h-10 w-32 transition-transform hover:scale-105"
@@ -86,6 +258,7 @@ export default function BonsListPage() {
                   <div className="text-center">
                     {agent.photoUrl ? (
                       <img
+                        crossOrigin="anonymous"
                         src={agent.photoUrl}
                         alt="Photo de l'agent"
                         className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
@@ -93,14 +266,12 @@ export default function BonsListPage() {
                     ) : (
                       <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full">
                         <span className="text-sm text-gray-600">
-                          {getInitials(agent.nom)}
+                          {agent.nom.split(" ").map((n) => n[0]).join("")}
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* Contenu du bon */}
                 <div className="border border-gray-500">
                   <div className="grid grid-cols-2 border-b border-gray-500">
                     <p className="border-r border-gray-500 p-1 font-bold text-base">
@@ -108,7 +279,6 @@ export default function BonsListPage() {
                     </p>
                     <p className="p-1 text-base font-semibold">{agent.nom}</p>
                   </div>
-
                   <div className="grid grid-cols-2 border-b border-gray-500">
                     <div>
                       <div className="grid grid-cols-2 border-b border-gray-500">
@@ -137,7 +307,6 @@ export default function BonsListPage() {
                       <p className="p-1 font-bold">237</p>
                     </div>
                   </div>
-
                   <div className="border-b border-gray-500">
                     <p className="p-1 font-bold text-base">
                       Point de distribution :{" "}
@@ -147,10 +316,9 @@ export default function BonsListPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* Pied de page avec QR Code */}
                 <div className="flex justify-between items-center p-3 border-x border-b border-gray-500">
                   <img
+                    crossOrigin="anonymous"
                     src="/KCCLogo.svg"
                     alt="Logo KCC"
                     className="h-10 w-32 transition-transform hover:scale-105"
