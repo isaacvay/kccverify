@@ -130,8 +130,8 @@ const BonPDF = ({ agent }: { agent: Agent }) => {
 
       <View style={styles.content}>
         <View style={styles.gridRow}>
-          <View style={styles.gridCol}>
-            <Text style={styles.label}>Noms :</Text>
+          <View style={{ flex: 2, flexDirection: "row" }}>
+            <Text style={styles.label}>Noms :{" "}</Text>
             <Text style={styles.value}>{agent.nom}</Text>
           </View>
         </View>
@@ -158,8 +158,8 @@ const BonPDF = ({ agent }: { agent: Agent }) => {
         </View>
 
         <View style={styles.gridRow}>
-          <View style={styles.gridColLast}>
-            <Text style={styles.label}>Point de distribution :</Text>
+          <View style={{ flex: 2, flexDirection: "row" }}>
+            <Text style={styles.label}>Point de distribution :{" "}</Text>
             <Text style={styles.value}>{agent.pointDistribution}</Text>
           </View>
         </View>
@@ -230,7 +230,7 @@ export default function BonsListPage() {
             }
           </PDFDownloadLink>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-col w-6/12 mx-auto gap-4">
           {agents.map((agent) => {
             const qrCodeValue = `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`;
             return (
