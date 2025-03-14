@@ -5,13 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/firebase/firebase"; // Vérifie le chemin selon ta config
-import {
-  HomeIcon,
-  DocumentPlusIcon,
-  DocumentTextIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
-import { motion } from "framer-motion";
 
 type NavLink = {
   path: string;
