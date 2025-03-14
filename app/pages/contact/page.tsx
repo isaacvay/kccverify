@@ -84,12 +84,15 @@ export default function ContactPage() {
 
               {/* Map */}
               <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-100">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1ddummy!2dRDC!3dLubumbashi"
-                  className="w-full h-64"
-                  loading="lazy"
-                  title="Carte de localisation"
-                />
+                 <div className="w-full max-w-2xl aspect-[4/3]">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3588.891699965573!2d25.394077074663144!3d-10.678534317936178!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1979e94933e7fbbd%3A0x36ee12432c0b6ac3!2sKamoto%20Copper%20Company!5e1!3m2!1sfr!2s!4v1741979225813!5m2!1sfr!2s" 
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                  </div>
               </div>
             </motion.div>
 
