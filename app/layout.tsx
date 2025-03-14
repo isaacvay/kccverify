@@ -6,6 +6,9 @@ import Navbar from "@/components/navbar/Navbar";
 export const metadata: Metadata = {
   title: "KCC",
   description: "KCC",
+  icons: {
+    icon: "/kccicon.ico",
+  }
 };
 
 export default function RootLayout({
