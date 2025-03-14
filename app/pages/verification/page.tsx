@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
-import { QrCode, Clock, Package, CalendarDays, ShieldCheck, CheckCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/firebase';
+import React, { useEffect, useState } from "react";
+import { QrCode, Clock, Package, CalendarDays, ShieldCheck, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/firebase/firebase";
+import { useSearchParams } from "next/navigation";
+import QRCode from "react-qr-code";
 
 interface Agent {
   id: string;
@@ -18,22 +20,23 @@ interface Agent {
 }
 
 export default function VerificationPage() {
+  const searchParams = useSearchParams();
+  const matriculeParam = searchParams.get("matricule");
+
   const [isVerified, setIsVerified] = useState(false);
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [agent, setAgent] = useState<Agent | null>(null);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Fonction qui vérifie un matricule donné
+  const verifyMatricule = async (matricule: string) => {
     setIsLoading(true);
-    setError('');
-
+    setError("");
     try {
-      // Interroger Firestore pour récupérer l'agent dont le matricule correspond au code saisi
       const q = query(
         collection(db, "enregistrements"),
-        where("matricule", "==", code)
+        where("matricule", "==", matricule)
       );
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) {
@@ -54,6 +57,20 @@ export default function VerificationPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Si un matricule est fourni dans l'URL, on lance la vérification automatique
+  useEffect(() => {
+    if (matriculeParam) {
+      setCode(matriculeParam);
+      verifyMatricule(matriculeParam);
+    }
+  }, [matriculeParam]);
+
+  // Soumission manuelle (si aucun matricule n'est présent dans l'URL)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    verifyMatricule(code);
   };
 
   return (
@@ -82,7 +99,8 @@ export default function VerificationPage() {
             </p>
           </div>
 
-          {!isVerified ? (
+          {/* Affichage du formulaire seulement si aucun matricule n'est fourni en URL */}
+          {!isVerified && !matriculeParam && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
@@ -116,7 +134,13 @@ export default function VerificationPage() {
                 {isLoading ? 'Vérification en cours...' : 'Confirmer le matricule'}
               </motion.button>
             </form>
-          ) : (
+          )}
+
+          {!isVerified && matriculeParam && isLoading && (
+            <div className="text-center text-gray-500">Vérification automatique en cours...</div>
+          )}
+
+          {isVerified && (
             <AnimatePresence>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -149,85 +173,95 @@ export default function VerificationPage() {
               exit={{ opacity: 0, y: -20 }}
               className="mt-8 bg-gradient-to-br from-[#01B4AC] to-[#018D86] p-8 rounded-2xl shadow-xl text-white"
             >
-      <div className="bg-white text-gray-900 p-4 rounded-lg shadow-lg h-[400px] w-[600px] border uppercase border-gray-400">
-        {/* En-tête */}
-        <div className="flex justify-between items-center p-2 border border-gray-500">
-          <div className="text-base text-gray-600 font-semibold">
-            <img
-              src="/KCCLogo.svg"
-              alt="Logo KCC"
-              className="h-10 w-32 transition-transform hover:scale-105"
-              width={128}
-              height={40}
-            />
-          </div>
-          <div className="text-center">
-            <h2 className="text-red-700 font-bold text-base uppercase">BON DE FARINE</h2>
-            <p className="text-base font-semibold">25 KG</p>
-          </div>
-          {/* Affichage de la photo depuis Cloudinary */}
-          <div className="text-center">
-            {agent.photoUrl ? (
-              <img
-                src={agent.photoUrl}
-                alt="Photo de l'agent"
-                className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
-              />
-            ) : (
-              <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full">
-                Pas de photo
-              </div>
-            )}
-          </div>
-        </div>
+              <div className="bg-white text-gray-900 p-4 rounded-lg shadow-lg h-[400px] w-[600px] border uppercase border-gray-400">
+                {/* En-tête */}
+                <div className="flex justify-between items-center p-2 border border-gray-500">
+                  <div className="text-base text-gray-600 font-semibold">
+                    <img
+                      src="/KCCLogo.svg"
+                      alt="Logo KCC"
+                      className="h-10 w-32 transition-transform hover:scale-105"
+                      width={128}
+                      height={40}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-red-700 font-bold text-base uppercase">BON DE FARINE</h2>
+                    <p className="text-base font-semibold">25 KG</p>
+                  </div>
+                  {/* Affichage de la photo depuis Cloudinary */}
+                  <div className="text-center">
+                    {agent.photoUrl ? (
+                      <img
+                        src={agent.photoUrl}
+                        alt="Photo de l'agent"
+                        className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full">
+                        Pas de photo
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-        {/* Contenu du bon */}
-        <div className="border border-gray-500">
-          <div className="grid grid-cols-2 border-b border-gray-500">
-            <p className="border-r border-gray-500 p-1 font-bold text-base">Noms</p>
-            <p className="p-1 text-base font-semibold">{agent.nom}</p>
-          </div>
+                {/* Contenu du bon */}
+                <div className="border border-gray-500">
+                  <div className="grid grid-cols-2 border-b border-gray-500">
+                    <p className="border-r border-gray-500 p-1 font-bold text-base">Noms</p>
+                    <p className="p-1 text-base font-semibold">{agent.nom}</p>
+                  </div>
 
-          <div className="grid grid-cols-2 border-b border-gray-500">
-            <div>
-              <div className="grid grid-cols-2 border-b border-gray-500">
-                <p className="border-r border-gray-500 p-1 font-bold text-base">Matricule</p>
-                <p className="p-1 text-base font-semibold">{agent.matricule}</p>
-              </div>
-              <div className="grid grid-cols-2 border-b border-gray-500">
-                <p className="border-r border-gray-500 p-1 font-bold text-base">GSP</p>
-                <p className="p-1 text-base font-semibold">{agent.gsp}</p>
-              </div>
-              <div className="grid grid-cols-2 border-b border-gray-500">
-                <p className="border-r border-gray-500 p-1 font-bold text-base">Mois</p>
-                <p className="p-1 text-base font-semibold">{agent.mois}</p>
-              </div>
-            </div>
-            <div className="border border-gray-500 text-xl text-center">
-              <p className="border-r border-gray-500 p-1 font-bold">N°</p>
-              <p className="p-1 font-bold">237</p>
-            </div>
-          </div>
+                  <div className="grid grid-cols-2 border-b border-gray-500">
+                    <div>
+                      <div className="grid grid-cols-2 border-b border-gray-500">
+                        <p className="border-r border-gray-500 p-1 font-bold text-base">Matricule</p>
+                        <p className="p-1 text-base font-semibold">{agent.matricule}</p>
+                      </div>
+                      <div className="grid grid-cols-2 border-b border-gray-500">
+                        <p className="border-r border-gray-500 p-1 font-bold text-base">GSP</p>
+                        <p className="p-1 text-base font-semibold">{agent.gsp}</p>
+                      </div>
+                      <div className="grid grid-cols-2 border-b border-gray-500">
+                        <p className="border-r border-gray-500 p-1 font-bold text-base">Mois</p>
+                        <p className="p-1 text-base font-semibold">{agent.mois}</p>
+                      </div>
+                    </div>
+                    <div className="border border-gray-500 text-xl text-center">
+                      <p className="border-r border-gray-500 p-1 font-bold">N°</p>
+                      <p className="p-1 font-bold">237</p>
+                    </div>
+                  </div>
 
-          <div className="border-b border-gray-500">
-            <p className="p-1 font-bold text-base">
-              Point de distribution : <span className="font-semibold">{agent.pointDistribution}</span>
-            </p>
-          </div>
-        </div>
+                  <div className="border-b border-gray-500">
+                    <p className="p-1 font-bold text-base">
+                      Point de distribution :{" "}
+                      <span className="font-semibold">{agent.pointDistribution}</span>
+                    </p>
+                  </div>
+                </div>
 
-        {/* Pied de page */}
-        <div className="flex justify-center items-center p-6 border-x border-b border-gray-500 text-gray-700">
-          <img
-            src="/KCCLogo.svg"
-            alt="Logo KCC"
-            className="h-10 w-32 transition-transform hover:scale-105"
-            width={128}
-            height={40}
-          />
-        </div>
-        </div>
-    
+                {/* QR Code contenant le matricule */}
+                <div className="flex justify-center items-center mt-4">
+                  <div className="bg-white p-2 rounded shadow">
+                    <QRCode
+                      value={`https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`}
+                      size={120}
+                    />
+                  </div>
+                </div>
+
+                {/* Pied de page */}
+                <div className="flex justify-center items-center p-6 border-x border-b border-gray-500 text-gray-700">
+                  <img
+                    src="/KCCLogo.svg"
+                    alt="Logo KCC"
+                    className="h-10 w-32 transition-transform hover:scale-105"
+                    width={128}
+                    height={40}
+                  />
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
