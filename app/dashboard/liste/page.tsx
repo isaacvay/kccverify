@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/firebase/firebase";
 import { 
   MagnifyingGlassIcon, 
@@ -34,6 +34,25 @@ export default function AgentsListPage() {
     asc: true 
   });
   const [selectedGSP, setSelectedGSP] = useState("all");
+  // État pour le mois sélectionné (ex: "FEV_2025")
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  // Options de mois (à adapter selon vos besoins)
+  const monthOptions = [
+    "", // Valeur vide pour ne pas modifier le mois d'origine
+    "JAN_2025",
+    "FEV_2025",
+    "MAR_2025",
+    "AVR_2025",
+    "MAI_2025",
+    "JUN_2025",
+    "JUL_2025",
+    "AOU_2025",
+    "SEP_2025",
+    "OCT_2025",
+    "NOV_2025",
+    "DEC_2025"
+  ];
 
   const fetchAgents = async () => {
     try {
@@ -92,6 +111,29 @@ export default function AgentsListPage() {
   const getInitials = (name: string) => 
     name.split(' ').map(part => part[0]).join('').toUpperCase();
 
+  // Fonction pour mettre à jour le champ "mois" de tous les agents dans Firestore
+  const updateMonthsInFirestore = async () => {
+    if (selectedMonth === "") return;
+    try {
+      const batch = writeBatch(db);
+      agents.forEach((agent) => {
+        const agentRef = doc(db, "enregistrements", agent.id);
+        batch.update(agentRef, { 
+          mois: selectedMonth,
+          utilise: false // ⚠️ Réinitialise le statut d'utilisation
+        });
+      });
+      await batch.commit();
+      
+      // Rafraîchissement obligatoire pour propager les changements
+      await fetchAgents(); 
+      alert("Mois et statuts réinitialisés pour tous les agents !");
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la mise à jour !");
+    }
+  };
+
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen ml-0 md:ml-56">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -107,20 +149,19 @@ export default function AgentsListPage() {
             </div>
           </div>
           {/* Bouton vers la page des bons */}
-        <div className="flex justify-end">
-          <Link href="/dashboard/bons">
-            <button className="px-4 py-2 bg-[#01B4AC] text-white rounded-lg shadow-md hover:bg-[#018D86] transition-all">
-              Voir tous les bons
-            </button>
-          </Link>
+          <div className="flex justify-end">
+            <Link href="/dashboard/bons">
+              <button className="px-4 py-2 bg-[#01B4AC] text-white rounded-lg shadow-md hover:bg-[#018D86] transition-all">
+                Voir tous les bons
+              </button>
+            </Link>
+          </div>
         </div>
-        </div>
-
-        
 
         {/* Contrôles de filtrage */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
           <div className="flex items-center gap-4">
+            {/* Sélecteur des GSP */}
             <div className="relative">
               <select
                 value={selectedGSP}
@@ -135,6 +176,33 @@ export default function AgentsListPage() {
               <ChevronUpDownIcon className="w-4 h-4 text-gray-400 absolute right-3 top-3" />
             </div>
 
+            {/* Sélecteur des mois */}
+            <div className="relative">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="pl-3 pr-8 py-2 rounded-lg border border-gray-300 bg-white appearance-none"
+              >
+                {monthOptions.map((moisOption, index) => (
+                  <option key={index} value={moisOption}>
+                    {moisOption === "" ? "Mois d'origine" : moisOption}
+                  </option>
+                ))}
+              </select>
+              <ChevronUpDownIcon className="w-4 h-4 text-gray-400 absolute right-3 top-3" />
+            </div>
+
+            {/* Bouton pour mettre à jour Firestore */}
+            <div>
+              <button
+                onClick={updateMonthsInFirestore}
+                className="px-3 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all"
+              >
+                Mettre à jour les mois
+              </button>
+            </div>
+
+            {/* Recherche */}
             <div className="relative">
               <input
                 type="text"
@@ -265,10 +333,12 @@ export default function AgentsListPage() {
                     </div>
                     
                     <div className="col-span-2 text-sm text-gray-600">
-                      {new Date(agent.mois).toLocaleDateString('fr-FR', {
-                        month: 'long',
-                        year: 'numeric'
-                      })}
+                      {selectedMonth 
+                        ? selectedMonth 
+                        : new Date(agent.mois).toLocaleDateString("fr-FR", {
+                            month: "long",
+                            year: "numeric"
+                          })}
                     </div>
                   </Link>
                 </motion.div>
