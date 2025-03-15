@@ -66,7 +66,7 @@ export default function AgentCard({ agent }: AgentCardProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className={`relative mt-8 h-96 md:h-auto w-auto ${cardBgClass} px-4 pb-4 pt-2 md:px-8 md:pb-8 rounded-2xl shadow-xl text-white`}
+        className={`relative mt-8 h-60 md:h-auto w-auto ${cardBgClass} px-4 pb-4 pt-2 md:px-8 md:pb-8 rounded-2xl shadow-xl text-white`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
@@ -97,7 +97,7 @@ export default function AgentCard({ agent }: AgentCardProps) {
 
         {/* Vue mobile */}
         <div className="block sm:hidden overflow-hidden" style={{ width: "400px", height: "600px" }}>
-          <div className="transform origin-top-left" style={{ width: "1200px", transform: "scale(0.60)" }}>
+          <div className="transform origin-top-left" style={{ width: "1200px", transform: "scale(0.40)" }}>
             <div className="bg-white text-gray-900 p-4 rounded-lg shadow-lg h-[400px] w-[600px] border uppercase border-gray-400">
               {/* En-tête */}
               <div className="flex justify-between items-center p-2 border border-gray-500">
