@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/firebase/firebase'; // Ajustez le chemin selon votre structure
+import { auth, db } from '@/firebase/firebase'; // Assurez-vous que db est bien exporté
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface FormData {
   name: string;
@@ -25,7 +26,6 @@ export default function SignupPage() {
   });
   const [error, setError] = useState<string>('');
 
-  // Typage de l'événement pour un input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type, checked } = e.target;
     setFormData((prevData) => ({
@@ -34,7 +34,6 @@ export default function SignupPage() {
     }));
   };
 
-  // Typage de l'événement de soumission du formulaire
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -50,19 +49,29 @@ export default function SignupPage() {
     }
 
     try {
+      // Création de l'utilisateur dans Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-      // Mise à jour du profil de l'utilisateur avec son nom complet
+      
+      // Mise à jour du profil dans Firebase Auth
       await updateProfile(userCredential.user, {
         displayName: formData.name,
       });
-      // Redirection vers /dashboard après une inscription réussie
+
+      // Enregistrement des données dans Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        name: formData.name,
+        email: formData.email,
+        createdAt: new Date(),
+        role: 'user', // Optionnel : ajoutez des rôles si nécessaire
+      });
+
+      // Redirection après succès
       router.push('/dashboard');
     } catch (err: unknown) {
-      // Vérifie que l'erreur est bien une instance d'Error pour accéder à "message"
       if (err instanceof Error) {
         setError(err.message);
       } else {
