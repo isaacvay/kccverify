@@ -9,16 +9,35 @@ import {
   PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { getDocs, collection } from "firebase/firestore";
+import {
+  getDocs,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { db } from "@/firebase/firebase";
+import MonthlyActivityChart from "@/components/MonthlyActivityChart/MonthlyActivityChart";
 
-// Interface décrivant la structure des données Firestore
+// Interface pour Agent (dossier dans "enregistrements")
 interface Agent {
   id: string;
+  nom: string;
   gsp: string;
   pointDistribution: string;
-  
-  // Ajoutez d'autres champs si nécessaire
+  createdAt: { seconds: number; nanoseconds: number };
+  utilise?: boolean;
+}
+
+// Dans ce contexte, nous utilisons les mêmes documents pour les vérifications.
+// Ainsi, l'interface Verification est identique à Agent (pour les bons utilisés).
+interface Verification {
+  id: string;
+  nom: string;
+  gsp: string;
+  pointDistribution: string;
+  createdAt: { seconds: number; nanoseconds: number };
 }
 
 export default function DashboardPage() {
@@ -30,25 +49,43 @@ export default function DashboardPage() {
     monthlyProgress: 0,
     verificationTrend: "up" as "up" | "down" | "stable",
   });
+  const [gspRepartition, setGspRepartition] = useState<{ [key: string]: number }>({});
+  const [latestVerifications, setLatestVerifications] = useState<Verification[]>([]);
+  const [latestAgents, setLatestAgents] = useState<Agent[]>([]);
+
+  // Fonction utilitaire pour formater la différence de temps
+  const formatTimeDifference = (date: Date): string => {
+    const diff = Date.now() - date.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    return `${days}d`;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Récupération des agents avec typage explicite
+        // Récupération de tous les agents depuis "enregistrements"
         const agentsSnapshot = await getDocs(collection(db, "enregistrements"));
         const agents = agentsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Agent[];
 
-        // Statistiques principales
         const totalAgents = agents.length;
         const uniqueGSP = new Set(agents.map((a) => a.gsp)).size;
         const uniquePoints = new Set(agents.map((a) => a.pointDistribution)).size;
 
-        // Récupération des vérifications
-        const verificationSnapshot = await getDocs(collection(db, "verifications"));
-        const recentVerifications = verificationSnapshot.size;
+        // Récupération des bons utilisés (verifications) depuis "enregistrements"
+        const usedAgentsSnapshot = await getDocs(
+          query(
+            collection(db, "enregistrements"),
+            where("utilise", "==", true)
+          )
+        );
+        const recentVerifications = usedAgentsSnapshot.size;
 
         setStats((prev) => ({
           ...prev,
@@ -57,6 +94,33 @@ export default function DashboardPage() {
           distributionPoints: uniquePoints,
           recentVerifications,
         }));
+
+        // Calcul de la répartition par GSP
+        const gspCounts = agents.reduce((acc: { [key: string]: number }, agent: Agent) => {
+          if (agent.gsp) {
+            acc[agent.gsp] = (acc[agent.gsp] || 0) + 1;
+          }
+          return acc;
+        }, {});
+        setGspRepartition(gspCounts);
+
+        // Récupération des 5 dernières vérifications (bons utilisés)
+        const verificationsQuery = query(
+          collection(db, "enregistrements"),
+          where("utilise", "==", true),
+          orderBy("createdAt", "desc"),
+          limit(5)
+        );
+        const verificationsSnapshot = await getDocs(verificationsQuery);
+        const verifications = verificationsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Verification[];
+        setLatestVerifications(verifications);
+
+        // Tri des agents par date d'enregistrement et sélection des 5 derniers
+        const sortedAgents = agents.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+        setLatestAgents(sortedAgents.slice(0, 5));
       } catch (error) {
         console.error("Erreur lors de la récupération des données :", error);
       }
@@ -112,57 +176,65 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Graphique Principal */}
+        {/* Graphique Principal en temps réel */}
         <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 border border-[#01B4AC]/20">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Activité Mensuelle</h2>
-            <div className="flex items-center gap-2 text-[#01B4AC]">
-              <ArrowTrendingUpIcon className="w-5 h-5" />
-              <span>{stats.monthlyProgress}% d'augmentation</span>
-            </div>
-          </div>
-          <div className="h-64 bg-gray-100 rounded-xl animate-pulse">
-            {/* Intégrer ici votre composant de graphique */}
+          <MonthlyActivityChart />
+        </div>
+         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+        {/* Dernières Vérifications */}
+        <div className="bg-white p-6 w-full md:w-1/2 rounded-2xl shadow-sm border border-[#01B4AC]/20 mb-8">
+          <h2 className="text-lg font-semibold mb-4">Dernières Vérifications</h2>
+          <div className="space-y-4">
+            {latestVerifications.length > 0 ? (
+              latestVerifications.map((verification) => {
+                const verificationDate = new Date(verification.createdAt.seconds * 1000);
+                return (
+                  <div
+                    key={verification.id}
+                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#01B4AC]/10 flex items-center justify-center">
+                        <DocumentCheckIcon className="w-4 h-4 text-[#01B4AC]" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{verification.nom}</p>
+                        <p className="text-sm text-gray-500">{verification.pointDistribution}</p>
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {formatTimeDifference(verificationDate)}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <p>Aucune vérification récente</p>
+            )}
           </div>
         </div>
 
-        {/* Dernières Activités */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#01B4AC]/20">
-            <h2 className="text-lg font-semibold mb-4">Dernières Vérifications</h2>
-            <div className="space-y-4">
-              {[...Array(5)].map((_, index) => (
-                <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#01B4AC]/10 flex items-center justify-center">
-                      <DocumentCheckIcon className="w-4 h-4 text-[#01B4AC]" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Agent #{index + 1234}</p>
-                      <p className="text-sm text-gray-500">Point de Distribution A</p>
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-500">2h</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Statistiques Rapides */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#01B4AC]/20">
-            <h2 className="text-lg font-semibold mb-4">Répartition par GSP</h2>
-            <div className="space-y-4">
-              {["GSP Nord", "GSP Sud", "GSP Est", "GSP Ouest"].map((gsp, index) => (
+        {/* Répartition par GSP */}
+        <div className="bg-white p-6 ml-4 w-full md:w-1/2  rounded-2xl shadow-sm border border-[#01B4AC]/20 mb-8">
+          <h2 className="text-lg font-semibold mb-4">Répartition par GSP</h2>
+          <div className="space-y-4">
+            {Object.entries(gspRepartition).length > 0 ? (
+              Object.entries(gspRepartition).map(([gsp, count], index) => (
                 <div key={gsp} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-8 ${index % 2 === 0 ? "bg-[#01B4AC]" : "bg-[#018D86]"}`} />
+                    <div
+                      className={`w-2 h-8 ${index % 2 === 0 ? "bg-[#01B4AC]" : "bg-[#018D86]"}`}
+                    />
                     <span>{gsp}</span>
                   </div>
-                  <span className="font-medium">{Math.floor(Math.random() * 50) + 20}</span>
+                  <span className="font-medium">{count}</span>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <p>Aucune donnée disponible</p>
+            )}
           </div>
+        </div>
         </div>
       </div>
     </div>
