@@ -2,41 +2,103 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CameraIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
+import { auth, db } from '@/firebase/firebase';
+import { getDoc, doc, updateDoc } from 'firebase/firestore';
 
 export default function ProfilePage() {
   const [user, setUser] = useState({
     avatar: 'https://i.pravatar.cc/150',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'Administrateur',
-    bio: 'Développeur passionné par la technologie...'
+    name: '',
+    email: '',
+    role: '',
+    bio: ''
   });
-
-  const [editing, setEditing] = useState(false);
-  const [tempAvatar, setTempAvatar] = useState(user.avatar);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const handleEdit = () => setEditing(true);
   
-  const handleSave = () => {
-    setUser(prev => ({ ...prev, avatar: tempAvatar }));
-    setEditing(false);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+  const [tempUser, setTempUser] = useState(user);
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setError("Vous devez être connecté");
+          setLoading(false);
+          return;
+        }
+
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists()) {
+          setError("Profil utilisateur introuvable");
+          setLoading(false);
+          return;
+        }
+
+        const userData = userDoc.data();
+        setUser({
+          avatar: userData.avatar || 'https://i.pravatar.cc/150',
+          name: userData.name || '',
+          email: userData.email || '',
+          role: userData.role || 'Utilisateur',
+          bio: userData.bio || ''
+        });
+        setTempUser({
+          avatar: userData.avatar || 'https://i.pravatar.cc/150',
+          name: userData.name || '',
+          email: userData.email || '',
+          role: userData.role || 'Utilisateur',
+          bio: userData.bio || ''
+        });
+      } catch (err) {
+        setError("Erreur lors du chargement du profil");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleEdit = () => {
+    setTempUser(user);
+    setEditing(true);
   };
 
-  const handleCancel = () => {
-    setTempAvatar(user.avatar);
-    setEditing(false);
+  const handleSave = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        ...tempUser,
+        updatedAt: new Date()
+      });
+
+      setUser(tempUser);
+      setEditing(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (err) {
+      setError("Erreur lors de la mise à jour");
+      console.error(err);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      setTempAvatar(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setTempUser(prev => ({ ...prev, avatar: url }));
     }
   };
+
+  if (loading) return <div className="p-8">Chargement...</div>;
+  if (error) return <div className="p-8 text-red-500">{error}</div>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
@@ -55,7 +117,7 @@ export default function ProfilePage() {
               className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#01B4AC] text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm"
             >
               <CheckIcon className="w-5 h-5" />
-              <span>Profil mis à jour avec succès !</span>
+              <span>Profil mis à jour !</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -64,7 +126,7 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative group">
             <img
-              src={tempAvatar}
+              src={editing ? tempUser.avatar : user.avatar}
               alt="Avatar"
               className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
             />
@@ -95,34 +157,34 @@ export default function ProfilePage() {
           <div className="grid gap-4">
             <ProfileField 
               label="Nom complet"
-              value={user.name}
+              value={editing ? tempUser.name : user.name}
               editing={editing}
-              onChange={(e: { target: { value: any; }; }) => setUser({...user, name: e.target.value})}
+              onChange={(e: { target: { value: any; }; }) => setTempUser(prev => ({ ...prev, name: e.target.value }))}
               icon={<PencilIcon className="w-5 h-5" />}
             />
             
             <ProfileField 
               label="Adresse email"
-              value={user.email}
+              value={editing ? tempUser.email : user.email}
               editing={editing}
-              onChange={(e: { target: { value: any; }; }) => setUser({...user, email: e.target.value})}
+              onChange={(e: { target: { value: any; }; }) => setTempUser(prev => ({ ...prev, email: e.target.value }))}
               type="email"
               icon={<PencilIcon className="w-5 h-5" />}
             />
             
             <ProfileField 
               label="Rôle"
-              value={user.role}
+              value={editing ? tempUser.role : user.role}
               editing={editing}
-              onChange={(e: { target: { value: any; }; }) => setUser({...user, role: e.target.value})}
+              onChange={(e: { target: { value: any; }; }) => setTempUser(prev => ({ ...prev, role: e.target.value }))}
               icon={<PencilIcon className="w-5 h-5" />}
             />
             
             <div className="relative">
               <label className="block text-sm font-medium text-gray-600 mb-2">Bio</label>
               <textarea
-                value={user.bio}
-                onChange={(e) => setUser({...user, bio: e.target.value})}
+                value={editing ? tempUser.bio : user.bio}
+                onChange={(e) => setTempUser(prev => ({ ...prev, bio: e.target.value }))}
                 className={`w-full p-3 rounded-xl border ${
                   editing 
                     ? 'border-[#01B4AC] focus:ring-2 focus:ring-[#01B4AC]/20' 
@@ -132,7 +194,7 @@ export default function ProfilePage() {
                 disabled={!editing}
               />
               <div className="absolute bottom-3 right-3 text-sm text-gray-400">
-                {user.bio.length}/500
+                {editing ? tempUser.bio.length : user.bio.length}/500
               </div>
             </div>
           </div>
@@ -155,7 +217,7 @@ export default function ProfilePage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleCancel}
+                onClick={() => setEditing(false)}
                 className="bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-300 transition-colors"
               >
                 <XMarkIcon className="w-5 h-5" />
