@@ -17,48 +17,49 @@ interface Agent {
   photoUrl?: string;
 }
 
+// Définissez d'abord des styles avec des dimensions réduites
 const styles = StyleSheet.create({
   page: {
-    padding: 10,
-    fontSize: 12,
+    padding: 5,
+    fontSize: 8, // taille de police réduite
     textTransform: "uppercase",
     fontFamily: "Helvetica-Bold",
   },
   container: {
     border: "1 solid #000",
-    marginBottom: 10,
+    marginBottom: 5,
     padding: 0,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     borderBottom: "1 solid #000",
-    padding: 8,
+    padding: 4,
     alignItems: "center",
   },
   headerText: {
     textAlign: "center",
-    marginHorizontal: 20,
+    marginHorizontal: 10,
   },
   content: {
-    marginTop: 0,
+    marginTop: 2,
   },
   gridRow: {
     flexDirection: "row",
     borderBottom: "1 solid #000",
   },
   gridCol: {
-    padding: 4,
+    padding: 2,
     borderRight: "1 solid #000",
     flex: 1,
   },
   gridColLast: {
-    padding: 4,
+    padding: 2,
     flex: 1,
   },
   label: {
     fontWeight: "bold",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   value: {
     fontWeight: "normal",
@@ -68,31 +69,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderLeft: "1 solid #000",
-    padding: 4,
+    padding: 2,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 8,
+    padding: 4,
     borderTop: "1 solid #000",
     alignItems: "center",
   },
   logo: {
-    width: 128,
-    height: 40,
+    width: 64,  // image réduite
+    height: 20, // image réduite
   },
   agentPhoto: {
-    width: 96,
-    height: 96,
-    borderRadius: 8,
-    border: "2 solid #fff",
+    width: 48,  // photo agent réduite
+    height: 48, // photo agent réduite
+    borderRadius: 4,
+    border: "1 solid #fff",
   },
   qrContainer: {
-    width: 64,
-    height: 64,
+    width: 32,  // conteneur QR réduit
+    height: 32,
     backgroundColor: "#fff",
-    padding: 4,
-    borderRadius: 4,
+    padding: 2,
+    borderRadius: 2,
     border: "1 solid #000",
   },
   qrImage: {
@@ -101,12 +102,13 @@ const styles = StyleSheet.create({
   },
 });
 
-const BonPDF = ({ agent, index }: { agent: Agent , index: number }) => {
+// Le composant BonPDF reste identique (il utilisera les nouveaux styles)
+const BonPDF = ({ agent, index }: { agent: Agent; index: number }) => {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const qrCodeValue = `https://kccverify.vercel.app/pages/verification?matricule=${agent.matricule}`;
 
   useEffect(() => {
-    QRCode1.toDataURL(qrCodeValue, { width: 200, margin: 1 })
+    QRCode1.toDataURL(qrCodeValue, { width: 100, margin: 1 }) // largeur réduite du QR
       .then((url: React.SetStateAction<string>) => setQrDataUrl(url))
       .catch(console.error);
   }, [qrCodeValue]);
@@ -116,14 +118,27 @@ const BonPDF = ({ agent, index }: { agent: Agent , index: number }) => {
       <View style={styles.header}>
         <Image style={styles.logo} src="/KCCLogo.png" />
         <View style={styles.headerText}>
-          <Text style={{ color: "#d32f2f", fontSize: 14, marginBottom: 4 }}>BON DE FARINE</Text>
-          <Text style={{ fontSize: 12 }}>25 KG</Text>
+          <Text style={{ color: "#d32f2f", fontSize: 10, marginBottom: 2 }}>
+            BON DE FARINE
+          </Text>
+          <Text style={{ fontSize: 8 }}>25 KG</Text>
         </View>
         {agent.photoUrl ? (
           <Image style={styles.agentPhoto} src={agent.photoUrl} />
         ) : (
-          <View style={[styles.agentPhoto, { backgroundColor: "#eee", justifyContent: "center", alignItems: "center" }]}>
-            <Text>{agent.nom.split(" ").map((n) => n[0]).join("")}</Text>
+          <View
+            style={[
+              styles.agentPhoto,
+              {
+                backgroundColor: "#eee",
+                justifyContent: "center",
+                alignItems: "center",
+              },
+            ]}
+          >
+            <Text style={{ fontSize: 8 }}>
+              {agent.nom.split(" ").map((n) => n[0]).join("")}
+            </Text>
           </View>
         )}
       </View>
@@ -131,7 +146,7 @@ const BonPDF = ({ agent, index }: { agent: Agent , index: number }) => {
       <View style={styles.content}>
         <View style={styles.gridRow}>
           <View style={{ flex: 2, flexDirection: "row" }}>
-            <Text style={styles.label}>Noms :{" "}</Text>
+            <Text style={styles.label}>Noms : </Text>
             <Text style={styles.value}>{agent.nom}</Text>
           </View>
         </View>
@@ -152,14 +167,16 @@ const BonPDF = ({ agent, index }: { agent: Agent , index: number }) => {
             </View>
           </View>
           <View style={styles.numberBox}>
-            <Text style={{ fontSize: 10 }}>N°</Text>
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>{index + 1}</Text>
+            <Text style={{ fontSize: 8 }}>N°</Text>
+            <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+              {index + 1}
+            </Text>
           </View>
         </View>
 
         <View style={styles.gridRow}>
           <View style={{ flex: 2, flexDirection: "row" }}>
-            <Text style={styles.label}>Point de distribution :{" "}</Text>
+            <Text style={styles.label}>Point de distribution : </Text>
             <Text style={styles.value}>{agent.pointDistribution}</Text>
           </View>
         </View>
@@ -175,15 +192,45 @@ const BonPDF = ({ agent, index }: { agent: Agent , index: number }) => {
   );
 };
 
-const BonsPDFDocument = ({ agents }: { agents: Agent[] }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-    {agents.map((agent, index) => (
-        <BonPDF key={agent.id} agent={agent} index={index} /> // Ajout de l'index
+// Composant BonsPDFDocument qui organise 6 bons par page dans une grille de 2 colonnes et 3 lignes
+const BonsPDFDocument = ({ agents }: { agents: Agent[] }) => {
+  // Découpe la liste en groupes de 6 agents (1 groupe = 1 page)
+  const groups = [];
+  for (let i = 0; i < agents.length; i += 6) {
+    groups.push(agents.slice(i, i + 6));
+  }
+  // Hauteur de chaque case (à ajuster si besoin)
+  const cellHeight = 200;
+
+  return (
+    <Document>
+      {groups.map((group, groupIndex) => (
+        <Page
+          key={groupIndex}
+          size="A4"
+          style={{ ...styles.page, padding: 5, flexDirection: "column" }}
+        >
+          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            {group.map((agent, index) => (
+              <View
+                key={agent.id}
+                style={{
+                  width: "50%", // 2 colonnes par ligne
+                  height: cellHeight,
+                  padding: 3,
+                }}
+              >
+                <BonPDF agent={agent} index={groupIndex * 6 + index} />
+              </View>
+            ))}
+          </View>
+        </Page>
       ))}
-    </Page>
-  </Document>
-);
+    </Document>
+  );
+};
+
+
 
 export default function BonsListPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
